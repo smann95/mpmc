@@ -292,7 +292,7 @@ void pairs(system_t *system) {
 
 	// get array of atom ptrs
 	rebuild_arrays(system);
-	atom_array = system->atom_array; 
+	atom_array = system->atom_array;
 	molecule_array = system->molecule_array;
 	n=system->natoms;
 
@@ -435,7 +435,7 @@ void update_pairs_insert(system_t *system) {
 /* remove pairs when a molecule is deleted */
 void update_pairs_remove(system_t *system) {
 
-	int i, n, m;
+	int i, n, m, largest_m;
 	molecule_t *molecule_ptr;
 	atom_t *atom_ptr;
 	pair_t *pair_ptr, **pair_array;
@@ -447,14 +447,27 @@ void update_pairs_remove(system_t *system) {
 	/* remove n number of pairs for all molecules ahead of the removal point */
 	pair_array = calloc(1, sizeof(pair_t *));
 	memnullcheck(pair_array,sizeof(pair_t *), __LINE__-1, __FILE__);
+
+	largest_m = 0;
+	for(molecule_ptr = system->molecules; molecule_ptr != system->checkpoint->tail; molecule_ptr = molecule_ptr->next) {
+		for(atom_ptr = molecule_ptr->atoms; atom_ptr; atom_ptr = atom_ptr->next) {
+
+			/* build the pair pointer array */
+			for(pair_ptr = atom_ptr->pairs, m = 0; pair_ptr; pair_ptr = pair_ptr->next, m++);
+			if (m>largest_m)
+				largest_m = m;
+		}
+	}
+
+	pair_array = realloc(pair_array, sizeof(pair_t *)*(largest_m + 1));
+	memnullcheck(pair_array,sizeof(pair_t *)*(largest_m + 1),__LINE__-1, __FILE__);
+
 	for(molecule_ptr = system->molecules; molecule_ptr != system->checkpoint->tail; molecule_ptr = molecule_ptr->next) {
 		for(atom_ptr = molecule_ptr->atoms; atom_ptr; atom_ptr = atom_ptr->next) {
 
 			/* build the pair pointer array */
 			for(pair_ptr = atom_ptr->pairs, m = 0; pair_ptr; pair_ptr = pair_ptr->next, m++) {
 
-				pair_array = realloc(pair_array, sizeof(pair_t *)*(m + 1));
-				memnullcheck(pair_array,sizeof(pair_t *)*(m + 1),__LINE__-1, __FILE__);
 				pair_array[m] = pair_ptr;
 
 			}
@@ -479,7 +492,7 @@ void update_pairs_remove(system_t *system) {
 /* if an insert move is rejected, remove the pairs that were previously added */
 void unupdate_pairs_insert(system_t *system) {
 
-	int i, n, m;
+	int i, n, m, largest_m;
 	molecule_t *molecule_ptr;
 	atom_t *atom_ptr;
 	pair_t *pair_ptr, **pair_array;
@@ -492,17 +505,26 @@ void unupdate_pairs_insert(system_t *system) {
 	/* remove n number of pairs for all molecules ahead of the removal point */
 	pair_array = calloc(1, sizeof(pair_t *));
 	memnullcheck(pair_array,sizeof(pair_t *), __LINE__-1, __FILE__);
+
+	largest_m = 0;
+	for(molecule_ptr = system->molecules; molecule_ptr != system->checkpoint->tail; molecule_ptr = molecule_ptr->next) {
+		for(atom_ptr = molecule_ptr->atoms; atom_ptr; atom_ptr = atom_ptr->next) {
+			for(pair_ptr = atom_ptr->pairs, m = 0; pair_ptr; pair_ptr = pair_ptr->next, m++);
+			if (m>largest_m)
+				largest_m = m;
+		}
+	}
+
+	pair_array = realloc(pair_array, sizeof(pair_t *)*(largest_m + 1));
+	memnullcheck(pair_array,sizeof(pair_t *)*(largest_m + 1), __LINE__-1, __FILE__);
+
+
 	for(molecule_ptr = system->molecules; molecule_ptr != system->checkpoint->tail; molecule_ptr = molecule_ptr->next) {
 		for(atom_ptr = molecule_ptr->atoms; atom_ptr; atom_ptr = atom_ptr->next) {
 
 			/* build the pair pointer array */
-			for(pair_ptr = atom_ptr->pairs, m = 0; pair_ptr; pair_ptr = pair_ptr->next, m++) {
-
-				pair_array = realloc(pair_array, sizeof(pair_t *)*(m + 1));
-				memnullcheck(pair_array,sizeof(pair_t *)*(m + 1), __LINE__-1, __FILE__);
+			for(pair_ptr = atom_ptr->pairs, m = 0; pair_ptr; pair_ptr = pair_ptr->next, m++)
 				pair_array[m] = pair_ptr;
-
-			}
 
 			for(i = (m - n); i < m; i++)
 				free(pair_array[i]);

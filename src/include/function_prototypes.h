@@ -7,7 +7,7 @@
 /* energy */
 double energy(system_t *);
 double energy_no_observables(system_t *);
-double cavity_absolute_check (system_t *);
+int cavity_absolute_check (system_t *);
 double lj(system_t *);
 double lj_nopbc(system_t *);
 double exp_repulsion(system_t *);

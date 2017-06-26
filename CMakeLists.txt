@@ -17,8 +17,8 @@ configure_file (
 set(CMAKE_BUILD_TYPE Release)
 
 if(CMAKE_COMPILER_IS_GNUCC)
-	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wall")
-	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wall")
+	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wall -ggdb")
+	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wall -ggdb")
 endif()
 
 set(LIB m)
@@ -27,6 +27,7 @@ set(INCLUDE src/include src/mersenne ${PROJECT_BINARY_DIR}/src/include)
 
 set(SRC
 src/mc/mc_moves.c
+src/mc/surface_multi_fit.c
 src/mc/surface_fit_arbitrary.c
 src/mc/qshift.c
 src/mc/single_point.c
@@ -38,6 +39,7 @@ src/mc/surf_fit.c
 src/mc/fugacity.c
 src/mc/cavity.c
 src/mc/checkpoint.c
+src/mc/surface_multi_fit.c
 src/histogram/histogram.c
 src/energy/lj_buffered_14_7.c
 src/energy/bessel.c

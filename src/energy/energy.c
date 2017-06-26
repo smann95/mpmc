@@ -45,7 +45,7 @@ int countNatoms(system_t * system) {
 
 /*check cavity_autoreject_absolute 
 -- probably not the most efficient place to put this, but likely the safest*/
-double cavity_absolute_check ( system_t * system ) {
+int cavity_absolute_check ( system_t * system ) {
 	molecule_t * molecule_ptr;
 	atom_t * atom_ptr;
 	pair_t * pair_ptr;
@@ -54,7 +54,13 @@ double cavity_absolute_check ( system_t * system ) {
 		for ( atom_ptr=molecule_ptr->atoms; atom_ptr; atom_ptr=atom_ptr->next ) {
 			for ( pair_ptr=atom_ptr->pairs; pair_ptr; pair_ptr=pair_ptr->next ) {
 				if ( molecule_ptr == pair_ptr->molecule ) continue; //skip if on the same molecule
-				if ( pair_ptr->rimg < system->cavity_autoreject_scale ) return MAXVALUE;
+				if ( pair_ptr->rimg < system->cavity_autoreject_scale )
+				{
+					if (!pair_ptr->rd_excluded)
+					{
+						return 1;
+					}
+				}
 			}
 		}
 	}
@@ -74,7 +80,6 @@ double energy(system_t *system) {
 	static double timing = 0;
 	static int count = 0;
 #endif
-
 	/* zero the initial values */
 	kinetic_energy = 0;
 	potential_energy = 0;
@@ -83,6 +88,7 @@ double energy(system_t *system) {
 	polar_energy = 0;
 	vdw_energy = 0;
     three_body_energy = 0;
+	int dont_bother = 0;
 
 	system->natoms = countNatoms(system);
 
@@ -94,8 +100,20 @@ double energy(system_t *system) {
 	// we set last_volume at the end of this function
 	if ( system->last_volume != system->pbc->volume 
 				|| system->ensemble==ENSEMBLE_REPLAY
-				|| system->observables->energy == 0.0 )
+				|| system->observables->energy == 0.0
+				//|| system->cavity_autoreject_absolute
+														)
 		flag_all_pairs(system);
+
+	if(system->cavity_autoreject_absolute)
+		dont_bother = cavity_absolute_check(system);
+
+	if (dont_bother)
+	{
+		//printf("CLOSE CONTACT\n");
+		flag_all_pairs(system);
+		return MAXVALUE;
+	}
 
 	/* get the electrostatic potential */
 	if(!(system->sg || system->rd_only)) {
@@ -111,7 +129,7 @@ double energy(system_t *system) {
 		system->observables->coulombic_energy = coulombic_energy;
 
 		/* get the polarization potential */
-		if(system->polarization) {
+		if(system->polarization&&!dont_bother) {
 
 #ifdef POLARTIMING
 			/* get timing of polarization energy function for cuda comparison */
@@ -162,21 +180,24 @@ double energy(system_t *system) {
 	}
 
 	/* get the repulsion/dispersion potential */
-	if(system->rd_anharmonic)
-		rd_energy = anharmonic(system);
-	else if(system->sg)
-		rd_energy = sg(system);
-	else if(system->dreiding)
-		rd_energy = dreiding(system);
-	else if(system->lj_buffered_14_7)
-		rd_energy = lj_buffered_14_7(system);
-	else if(system->disp_expansion)
-		rd_energy = disp_expansion(system);
-	else if(system->cdvdw_exp_repulsion)
-		rd_energy = exp_repulsion(system);
-	else if(!system->gwp)
-		rd_energy = lj(system);
-	system->observables->rd_energy = rd_energy;
+	//if (!dont_bother)
+	//{
+		if(system->rd_anharmonic)
+			rd_energy = anharmonic(system);
+		else if(system->sg)
+			rd_energy = sg(system);
+		else if(system->dreiding)
+			rd_energy = dreiding(system);
+		else if(system->lj_buffered_14_7)
+			rd_energy = lj_buffered_14_7(system);
+		else if(system->disp_expansion)
+			rd_energy = disp_expansion(system);
+		else if(system->cdvdw_exp_repulsion)
+			rd_energy = exp_repulsion(system);
+		else if(!system->gwp)
+			rd_energy = lj(system);
+		system->observables->rd_energy = rd_energy;
+	//}
     
 	if (system->axilrod_teller)
 	{
@@ -216,8 +237,11 @@ double energy(system_t *system) {
 	/* set last known volume*/
 	system->last_volume = system->pbc->volume;
 
-	if(system->cavity_autoreject_absolute)
-		potential_energy += cavity_absolute_check( system );
+	if (dont_bother)
+		//printf("%f\n",potential_energy);
+		return MAXVALUE;
+
+
 
 	return(potential_energy);
 

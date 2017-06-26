@@ -173,7 +173,7 @@ molecule_t *read_molecules(FILE * fp, system_t *system) {
 		memset(token_c6,           0, MAXLINE);
 		memset(token_c8,           0, MAXLINE);
 		memset(token_c10,          0, MAXLINE);
-		memset(token_c9,          0, MAXLINE);
+		memset(token_c9,           0, MAXLINE);
 
 		/* parse the line */
 		sscanf(linebuf, "%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s\n", 
