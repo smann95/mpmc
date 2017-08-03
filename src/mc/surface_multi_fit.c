@@ -566,7 +566,6 @@ void output_multi_params(double temperature, double current_error, multiParamDat
 		params->c8[i],
 		params->c10[i]);
 	}
-	fflush(stdout);
     // write the params file
     system->wrapall = 0;
     FILE *fp = fopen("multifit_sites.pqr","w");
@@ -601,6 +600,7 @@ void output_multi_params(double temperature, double current_error, multiParamDat
         write_molecules(system, fp);
 	}
     fclose(fp);
+	fflush(stdout);
 	return;
 }
 
