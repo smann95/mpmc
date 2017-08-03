@@ -252,21 +252,24 @@ void read_multi_configs(system_t* system, multiConfigData_t* configs, multiParam
 				error( "SURFACE MULTI FIT: The multi-fit configuration file is not in the correct format.\n" );
 				die(-1);
 			}
-			new_atom->pos[0] = new_atom->wrapped_pos[0] = atof(token);
+			new_atom->pos[0] = atof(token);
+            new_atom->wrapped_pos[0] = new_atom->pos[0];
 			token = strtok(NULL,s);
 			if (token == NULL)
 			{
 				error( "SURFACE MULTI FIT: The multi-fit configuration file is not in the correct format.\n" );
 				die(-1);
 			}
-			new_atom->pos[1] = new_atom->wrapped_pos[1] = atof(token);
+			new_atom->pos[1] = atof(token);
+            new_atom->wrapped_pos[1] = new_atom->pos[1];
 			token = strtok(NULL,s);
 			if (token == NULL)
 			{
 				error( "SURFACE MULTI FIT: The multi-fit configuration file is not in the correct format.\n" );
 				die(-1);
 			}
-			new_atom->pos[2] = new_atom->wrapped_pos[2] = atof(token);
+			new_atom->pos[2] = atof(token);
+            new_atom->wrapped_pos[2] = new_atom->pos[2];
 			token = strtok(NULL,s);
 			if (token == NULL)
 			{
@@ -550,7 +553,7 @@ double calc_multi_error(system_t* system, multiConfigData_t* configs) {
 	return total_error; // Return error
 }
 
-void output_multi_params(double temperature, double current_error, multiParamData_t* params, system_t *system, molecule_t *original_molecule) {
+void output_multi_params(double temperature, double current_error, multiParamData_t* params, system_t *system, molecule_t *original_molecule, multiConfigData_t* configs) {
 	printf("temperature = %f, sq_error = %f\n", temperature, current_error);
 	int i,j;
 	for (i=0;i<params->nParams;i++)	{
@@ -564,6 +567,8 @@ void output_multi_params(double temperature, double current_error, multiParamDat
 		params->c10[i]);
 	}
 	fflush(stdout);
+    // write the params file
+    system->wrapall = 0;
     FILE *fp = fopen("multifit_sites.pqr","w");
     molecule_t *molecule_ptr;
     atom_t *atom_ptr;
@@ -588,6 +593,13 @@ void output_multi_params(double temperature, double current_error, multiParamDat
     system->molecules = original_molecule;
     system->fit_best_square_error = current_error;
     write_molecules(system, fp);
+    fclose(fp);
+    // write the current configs
+    fp = fopen("multifit_traj.pqr","w");
+	for (i=0;i<configs->nConfigs;i++) {
+		system->molecules = configs->molecules[i];
+        write_molecules(system, fp);
+	}
     fclose(fp);
 	return;
 }
@@ -629,7 +641,7 @@ int surface_multi_fit (system_t *system) {
 
 	// write params and current_error to stdout
 	printf("*** Initial Fit: \n");
-	output_multi_params(temperature, current_error, params, system, original_molecule);
+	output_multi_params(temperature, current_error, params, system, original_molecule, configs);
 	printf("*****************\n");
 
 	for(nSteps = 0; temperature > MIN_TEMPERATURE; ++nSteps) {
@@ -648,12 +660,12 @@ int surface_multi_fit (system_t *system) {
 		if(condition) {
 			// ACCEPT
 			// TODO: update last parameters in params
-			output_multi_params(temperature, current_error, params, system, original_molecule);
+			output_multi_params(temperature, current_error, params, system, original_molecule, configs);
 			last_error = current_error;
 			accept_multi_params(params,configs);
 		} else {
 			// REJECT
-			//output_multi_params(temperature, current_error, params, system, original_molecule);
+			//output_multi_params(temperature, current_error, params, system, original_molecule, configs);
 			undo_multi_params(params,configs);
 			apply_multi_params(params,configs);
 		}
@@ -664,7 +676,7 @@ int surface_multi_fit (system_t *system) {
 	// write params and current_error to stdout
 	printf("*** Final Fit: \n");
 	current_error = calc_multi_error(system, configs);
-	output_multi_params(temperature, current_error, params, system, original_molecule);
+	output_multi_params(temperature, current_error, params, system, original_molecule, configs);
 	output_best_config_energies(configs);
 	printf("*****************\n");
 
