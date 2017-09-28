@@ -475,7 +475,7 @@ void store_system_config( system_t *system, configData_t *originalConfig ) {
 // if the site cannot move, or MOVEABLE if it is allowed to float.
 
 int determine_mobility_code_from_atom_type( char *atomType ) {
-	char linebuf[MAXLINE];
+	//char linebuf[MAXLINE];
 	
 	if( !strncasecmp( atomType, "H2G", 3 )) 
 		return  FIXED;
@@ -493,8 +493,8 @@ int determine_mobility_code_from_atom_type( char *atomType ) {
 		return MOVEABLE;
 		
 	// Default case...
-	sprintf(linebuf,"warning: I don't know whether atomType %s is MOVEABLE or FIXED. Defaulting to MOVEABLE.\n", atomType);
-	error(linebuf);
+	//sprintf(linebuf,"warning: I don't know whether atomType %s is MOVEABLE or FIXED. Defaulting to MOVEABLE.\n", atomType);
+	//error(linebuf);
 	return MOVEABLE;
 }
 
@@ -559,8 +559,8 @@ int surface_fit_arbitrary( system_t *system ) {
 	// Construct the array that contains the configuration information,
 	// the associated energies, and get the total number of configs
 	int nConfigs = 0;
-	configData_t *configuration = 0;  
-	read_config_fit_input_file( system, &configuration, &nConfigs ); 
+	configData_t *configuration = 0;
+	read_config_fit_input_file( system, &configuration, &nConfigs );
 
 
 	// Output the geometry for visual verification
