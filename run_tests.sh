@@ -13,7 +13,8 @@ do
   rm -rf build
   git checkout -b "${commit}" ${commit}
   bash compile.sh &> compile_logs/compile_${commit}.log
-  build/mpmc --version
+  build/mpmc bs.inp
+  exit
 done
 
 git checkout test_suite
