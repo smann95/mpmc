@@ -12,7 +12,7 @@ for commit in $(git rev-list master | head)
 do
   rm -rf build
   git checkout -b "${commit}" ${commit}
-  bash compile.sh &> compile_logs/compile_${commit}.log
+  bash compile.sh &> compilation_logs/compile_${commit}.log
   build/mpmc bs.inp | head -n 1
 done
 
